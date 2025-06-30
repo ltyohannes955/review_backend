@@ -22,6 +22,9 @@ jobs:
         
       - name: Run tests
         run: bun test
+        env:
+          MONGODB_URL: ${{ secrets.MONGODB_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
         
       - name: Build
         run: bun run build
