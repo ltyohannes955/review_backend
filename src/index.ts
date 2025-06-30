@@ -2,15 +2,18 @@ import { Hono } from "hono";
 import { poweredBy } from "hono/powered-by";
 import { logger } from "hono/logger";
 import connectDB from "./db/connect";
-import dbConnect from "./db/connect";
+import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
+
 const app = new Hono();
 
 app.use(poweredBy());
 app.use(logger());
 
-app.get("/", (c) => {
-  return c.text("Hello Hono!");
-});
+
+// Mount routes
+app.route("/auth", authRoutes);
+app.route("/users", userRoutes);
 
 (async () => {
   await connectDB();
