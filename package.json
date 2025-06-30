@@ -6,11 +6,14 @@
     "build": "bun build ./src/index.ts --outdir ./dist"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "hono": "^4.8.3",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.16.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/jsonwebtoken": "^9.0.10"
   }
 }
