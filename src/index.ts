@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import institutionsRoutes from "./routes/institution.routes";
 import { cors } from "hono/cors";
+import reviewRoutes from "./routes/review.routes";
 
 const app = new Hono();
 app.use(
@@ -25,6 +26,7 @@ app.use(logger());
 app.route("/auth", authRoutes);
 app.route("/users", userRoutes);
 app.route("/institutions", institutionsRoutes);
+app.route("/reviews", reviewRoutes);
 
 (async () => {
   await connectDB();
