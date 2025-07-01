@@ -2,19 +2,24 @@ import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 import app from "../index";
 import mongoose from "mongoose";
 import User from "../models/user.model";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+let mongo: MongoMemoryServer;
 
 describe("Auth Routes", () => {
   beforeAll(async () => {
-    // Connect to test database
-    await mongoose.connect(
-      process.env.MONGODB_URL || "mongodb://localhost:27017/test"
-    );
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    mongo = await MongoMemoryServer.create();
+    const uri = mongo.getUri();
+    await mongoose.connect(uri);
+    // rest of setup
   });
 
   afterAll(async () => {
-    // Clean up database and close connection
-    await User.deleteMany({});
     await mongoose.connection.close();
+    await mongo.stop();
   });
 
   describe("POST /register", () => {
@@ -31,7 +36,6 @@ describe("Auth Routes", () => {
           name: "Test User",
           email: "test@example.com",
           password: "password123",
-          DateOfBirth: "1990-01-01",
         }),
       });
 
@@ -50,7 +54,6 @@ describe("Auth Routes", () => {
           name: "Test User",
           email: "test@example.com",
           password: "password123",
-          DateOfBirth: "1990-01-01",
         }),
       });
 
