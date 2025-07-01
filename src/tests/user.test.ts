@@ -1,15 +1,22 @@
 import { describe, expect, it, beforeAll, afterAll } from "bun:test";
 import app from "../index";
 import mongoose from "mongoose";
-import User from "../models/user.model";
+import { MongoMemoryServer } from "mongodb-memory-server";
+
+let mongo: MongoMemoryServer;
 
 describe("User Routes", () => {
   let authToken: string;
   let userId: string;
 
   beforeAll(async () => {
-    // Connect to test database
-    await mongoose.connect(process.env.MONGODB_URL || "mongodb://localhost:27017/test");
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+    mongo = await MongoMemoryServer.create();
+    const uri = mongo.getUri();
+    await mongoose.connect(uri);
+    // rest of setup
 
     // Create a test user and get auth token
     // In the beforeAll function, update the register route:
@@ -20,8 +27,7 @@ describe("User Routes", () => {
         name: "Test User",
         email: "test@example.com",
         password: "password123",
-        DateOfBirth: "1990-01-01"
-      })
+      }),
     });
 
     const data = await registerRes.json();
@@ -30,9 +36,8 @@ describe("User Routes", () => {
   });
 
   afterAll(async () => {
-    // Clean up database and close connection
-    await User.deleteMany({});
     await mongoose.connection.close();
+    await mongo.stop();
   });
 
   describe("GET /users/:id", () => {
@@ -40,8 +45,8 @@ describe("User Routes", () => {
       const res = await app.request(`/users/${userId}`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${authToken}`
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
 
       const data = await res.json();
@@ -51,7 +56,7 @@ describe("User Routes", () => {
 
     it("should return 401 without auth token", async () => {
       const res = await app.request(`/users/${userId}`, {
-        method: "GET"
+        method: "GET",
       });
 
       const data = await res.json();
@@ -66,11 +71,11 @@ describe("User Routes", () => {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${authToken}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: "Updated Name"
-        })
+          name: "Updated Name",
+        }),
       });
 
       const data = await res.json();
@@ -84,8 +89,8 @@ describe("User Routes", () => {
       const res = await app.request(`/users/${userId}`, {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${authToken}`
-        }
+          Authorization: `Bearer ${authToken}`,
+        },
       });
 
       const data = await res.json();
