@@ -5,6 +5,7 @@ export interface IReview {
   comment: string;
   user: Types.ObjectId;
   institution: Types.ObjectId;
+  images: string[];
 }
 
 const ReviewSchema = new Schema(
@@ -18,19 +19,18 @@ const ReviewSchema = new Schema(
       required: true,
     },
     user: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     institution: {
-      type: Types.ObjectId,
+      type: Schema.Types.ObjectId,
       ref: "Institution",
       required: true,
     },
+    images: [{ type: String }]
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 export default model("Review", ReviewSchema);
