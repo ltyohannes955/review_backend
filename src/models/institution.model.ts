@@ -6,6 +6,7 @@ export interface IInstitutionSchema {
   description: string;
   owner: Types.ObjectId;
   addedBy: Types.ObjectId;
+  images: string[];
 }
 
 const InstitutionSchema = new Schema<IInstitutionSchema>({
@@ -14,6 +15,7 @@ const InstitutionSchema = new Schema<IInstitutionSchema>({
   description: { type: String, required: true },
   owner: { type: Schema.Types.ObjectId, required: false, ref: "User" },
   addedBy: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+  images: [{ type: String }],
 });
 
 export default model("Institution", InstitutionSchema);
