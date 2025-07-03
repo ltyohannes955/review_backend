@@ -13,7 +13,10 @@ app.use(
   "*",
   cors({
     origin: (origin) => {
-      const allowed = ["http://localhost:3000"];
+      const allowed = [
+        "http://localhost:3000",
+        "https://review-ui-pied.vercel.app",
+      ];
       return allowed.includes(origin ?? "") ? origin : "";
     },
     credentials: true,
