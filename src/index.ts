@@ -15,9 +15,16 @@ app.use(
     origin: (origin) => {
       const allowed = [
         "http://localhost:3000",
-        // "https://review-ui-pied.vercel.app",
+        "https://review-ui-pied.vercel.app",
       ];
-      return allowed.includes(origin ?? "") ? origin : "";
+
+      if (!origin) return ""; // Handles non-browser requests
+
+      if (allowed.includes(origin)) {
+        return origin;
+      }
+
+      return "null"; // 👈 safer than an empty string
     },
     credentials: true,
   })
