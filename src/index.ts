@@ -17,14 +17,7 @@ app.use(
         "http://localhost:3000",
         "https://review-ui-pied.vercel.app",
       ];
-
-      if (!origin) return ""; // Handles non-browser requests
-
-      if (allowed.includes(origin)) {
-        return origin;
-      }
-
-      return "null"; // 👈 safer than an empty string
+      return allowed.includes(origin ?? "") ? origin : "";
     },
     credentials: true,
   })
