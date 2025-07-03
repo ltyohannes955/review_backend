@@ -5,41 +5,33 @@ import { uploadImages } from "../utils/upload";
 
 export const createInstitution = async (c: Context) => {
   try {
-    const body = await c.req.parseBody();
+    const formData = await c.req.formData();
     const userId = c.get("userId");
 
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-    // Handle files
-    const files = body.images;
+    const files = formData.getAll("images");
+    const validFiles = files.filter(
+      (file) => file instanceof File && file.size > 0
+    );
+
     let imageUrls: string[] = [];
-
-    if (files) {
-      // Ensure files is always an array
-      const fileArray = Array.isArray(files) ? files : [files];
-
-      // Check if files are actually present and are valid File objects
-      const validFiles = fileArray.filter(
-        (file) => file instanceof File && file.size > 0
-      );
-
-      if (validFiles.length > 0) {
-        try {
-          imageUrls = await uploadImages(validFiles);
-          console.log("Uploaded image URLs:", imageUrls); // Debug log
-        } catch (uploadError) {
-          console.error("Image upload error:", uploadError);
-          return c.json({ error: "Failed to upload images" }, 500);
-        }
+    if (validFiles.length > 0) {
+      try {
+        imageUrls = await uploadImages(validFiles as File[]);
+        console.log("Uploaded image URLs:", imageUrls);
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+        return c.json({ error: "Failed to upload images" }, 500);
       }
     }
 
     const institution = await Institution.create({
-      name: body.name,
-      location: body.location,
-      description: body.description,
+      name: formData.get("name")?.toString(),
+      location: formData.get("location")?.toString(),
+      description: formData.get("description")?.toString(),
+      owner: formData.get("owner")?.toString(),
       addedBy: userId,
-      owner: body.owner,
       images: imageUrls,
     });
 
@@ -57,28 +49,32 @@ export const updateInstitution = async (c: Context) => {
   try {
     const contentType = c.req.header("content-type") || "";
     let body: any = {};
-    let files: File[] = [];
     let imageUrls: string[] = [];
 
     if (contentType.includes("application/json")) {
-      body = await c.req.json(); // JSON request (e.g., from your test)
+      body = await c.req.json();
     } else if (contentType.includes("multipart/form-data")) {
-      body = await c.req.parseBody();
-      const uploaded = body.images;
+      const formData = await c.req.formData();
 
-      files = uploaded
-        ? Array.isArray(uploaded)
-          ? (uploaded as File[])
-          : [uploaded as File]
-        : [];
+      const files = formData.getAll("images");
+      const validFiles = files.filter(
+        (file) => file instanceof File && file.size > 0
+      );
 
-      if (files.length > 0) {
-        const newUrls = await uploadImages(files);
+      if (validFiles.length > 0) {
+        const newUrls = await uploadImages(validFiles as File[]);
         const institution = await Institution.findById(id);
         if (!institution)
           return c.json({ error: "Institution not found" }, 404);
         imageUrls = [...(institution.images || []), ...newUrls];
       }
+
+      body = {
+        name: formData.get("name")?.toString(),
+        location: formData.get("location")?.toString(),
+        description: formData.get("description")?.toString(),
+        owner: formData.get("owner")?.toString(),
+      };
     }
 
     const updatedInstitution = await Institution.findByIdAndUpdate(

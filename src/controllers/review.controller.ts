@@ -5,36 +5,31 @@ import { uploadImages } from "../utils/upload";
 
 export const createReview = async (c: Context) => {
   try {
-    const body = await c.req.parseBody();
+    const formData = await c.req.formData();
     const userId = c.get("userId");
 
     if (!userId) return c.json({ error: "Unauthorized" }, 401);
 
-    // Handle image upload
-    const files = body.images;
+    const files = formData.getAll("images");
+    const fileArray = files.filter(
+      (file) => file instanceof File && file.size > 0
+    );
+
     let imageUrls: string[] = [];
-
-    if (files) {
-      const fileArray = Array.isArray(files) ? files : [files];
-      const validFiles = fileArray.filter(
-        (file) => file instanceof File && file.size > 0
-      );
-
-      if (validFiles.length > 0) {
-        try {
-          imageUrls = await uploadImages(validFiles);
-        } catch (uploadError) {
-          console.error("Image upload error:", uploadError);
-          return c.json({ error: "Failed to upload images" }, 500);
-        }
+    if (fileArray.length > 0) {
+      try {
+        imageUrls = await uploadImages(fileArray as File[]);
+      } catch (uploadError) {
+        console.error("Image upload error:", uploadError);
+        return c.json({ error: "Failed to upload images" }, 500);
       }
     }
 
     const review = await Review.create({
-      rating: Number(body.rating),
-      comment: body.comment,
+      rating: Number(formData.get("rating")),
+      comment: formData.get("comment")?.toString(),
       user: userId,
-      institution: body.institution,
+      institution: formData.get("institution"),
       images: imageUrls,
     });
 
@@ -54,19 +49,20 @@ export const updateReview = async (c: Context) => {
       return c.json({ error: "Invalid review ID" }, 400);
     }
 
-    const body = await c.req.parseBody();
-    const files = body.images;
+    const contentType = c.req.header("content-type") || "";
     let imageUrls: string[] = [];
+    let fields: Record<string, any> = {};
 
-    if (files) {
-      const fileArray = Array.isArray(files) ? files : [files];
-      const validFiles = fileArray.filter(
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await c.req.formData();
+      const files = formData.getAll("images");
+      const validFiles = files.filter(
         (file) => file instanceof File && file.size > 0
       );
 
       if (validFiles.length > 0) {
         try {
-          const newUrls = await uploadImages(validFiles);
+          const newUrls = await uploadImages(validFiles as File[]);
           const review = await Review.findById(id);
           if (!review) return c.json({ error: "Review not found" }, 404);
           imageUrls = [...(review.images || []), ...newUrls];
@@ -75,12 +71,28 @@ export const updateReview = async (c: Context) => {
           return c.json({ error: "Failed to upload images" }, 500);
         }
       }
+
+      fields = {
+        ...(formData.get("rating") && {
+          rating: Number(formData.get("rating")),
+        }),
+        ...(formData.get("comment") && {
+          comment: formData.get("comment")?.toString(),
+        }),
+        ...(formData.get("institution") && {
+          institution: formData.get("institution")?.toString(),
+        }),
+      };
+    } else if (contentType.includes("application/json")) {
+      fields = await c.req.json();
+    } else {
+      return c.json({ error: "Unsupported content type" }, 400);
     }
 
     const updatedReview = await Review.findOneAndUpdate(
       { _id: id, user: userId },
       {
-        ...body,
+        ...fields,
         ...(imageUrls.length > 0 && { images: imageUrls }),
       },
       { new: true }
