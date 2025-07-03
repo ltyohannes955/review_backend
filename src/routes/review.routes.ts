@@ -10,11 +10,10 @@ import {
 
 const reviewRoutes = new Hono();
 
-reviewRoutes.use("/*", authMiddleware);
-reviewRoutes.post("/", createReview);
+reviewRoutes.post("/", authMiddleware, createReview);
 reviewRoutes.get("/institution/:institutionId", getReviewsByInstitution);
-reviewRoutes.get("/user/:userId", getReviewsByUser);
-reviewRoutes.patch("/:id", updateReview);
-reviewRoutes.delete("/:id", deleteReview);
+reviewRoutes.get("/user/:userId", authMiddleware, getReviewsByUser);
+reviewRoutes.patch("/:id", authMiddleware, updateReview);
+reviewRoutes.delete("/:id", authMiddleware, deleteReview);
 
 export default reviewRoutes;
