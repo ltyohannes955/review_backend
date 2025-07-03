@@ -40,40 +40,42 @@ describe("Review Routes", () => {
     userId = userData.user.id;
 
     // Create test institution
+    const formData = new FormData();
+    formData.append("name", "Test Institution");
+    formData.append("description", "Test Description");
+    formData.append("location", "Test Location");
+
     const institutionResponse = await app.request("/institutions", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${authToken}`,
       },
-      body: JSON.stringify({
-        name: "Test Institution",
-        description: "Test Description",
-        location: "Test Location",
-      }),
+      body: formData,
     });
     const institutionData = await institutionResponse.json();
     institutionId = institutionData._id;
-  });
 
-  afterAll(async () => {
-    await mongoose.connection.close();
-    await mongo.stop();
+    expect(institutionResponse.status).toBe(201);
+    expect(institutionId).toBeDefined();
   });
 
   describe("POST /reviews", () => {
-    it("should create a new review", async () => {
+    it("should create a new review with images", async () => {
+      const imageBlob = new Blob(["test review image"], { type: "image/jpeg" });
+      const imageFile = new File([imageBlob], "review-test.jpg", { type: "image/jpeg" });
+
+      const formData = new FormData();
+      formData.append("rating", "5");
+      formData.append("comment", "Great institution!");
+      formData.append("institution", institutionId);
+      formData.append("images", imageFile);
+
       const response = await app.request("/reviews", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify({
-          rating: 5,
-          comment: "Great institution!",
-          institution: institutionId,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -83,6 +85,75 @@ describe("Review Routes", () => {
       expect(data.comment).toBe("Great institution!");
       expect(data.user.toString()).toBe(userId);
       expect(data.institution.toString()).toBe(institutionId);
+      expect(Array.isArray(data.images)).toBe(true);
+    });
+  });
+
+  afterAll(async () => {
+    await mongoose.connection.close();
+    await mongo.stop();
+  });
+
+  describe("POST /reviews", () => {
+    it("should create a new review with images", async () => {
+      const imageBlob = new Blob(["test review image"], { type: "image/jpeg" });
+      const imageFile = new File([imageBlob], "review-test.jpg", {
+        type: "image/jpeg",
+      });
+
+      const formData = new FormData();
+      formData.append("rating", "5");
+      formData.append("comment", "Great institution!");
+      formData.append("institution", institutionId);
+      formData.append("images", imageFile);
+
+      const response = await app.request("/reviews", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      reviewId = data._id;
+      expect(response.status).toBe(201);
+      expect(data.rating).toBe(5);
+      expect(data.comment).toBe("Great institution!");
+      expect(data.user.toString()).toBe(userId);
+      expect(data.institution.toString()).toBe(institutionId);
+      expect(Array.isArray(data.images)).toBe(true);
+    });
+  });
+
+  describe("PATCH /reviews/:id", () => {
+    it("should update a review with new images", async () => {
+      const imageBlob = new Blob(["updated review image"], {
+        type: "image/jpeg",
+      });
+      const imageFile = new File([imageBlob], "updated-review.jpg", {
+        type: "image/jpeg",
+      });
+
+      const formData = new FormData();
+      formData.append("rating", "4");
+      formData.append("comment", "Updated review");
+      formData.append("images", imageFile);
+
+      const response = await app.request(`/reviews/${reviewId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+      expect(response.status).toBe(200);
+      expect(data.rating).toBe(4);
+      expect(data.comment).toBe("Updated review");
+      expect(Array.isArray(data.images)).toBe(true);
+      expect(data.images.length).toBeGreaterThan(0);
     });
   });
 
